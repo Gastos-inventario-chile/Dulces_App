@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/store/authContext";
 
+// Firebase Auth requiere el browser — desactivar prérender estático
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "DulcesApp - Sistema de Ventas",
   description: "Sistema de inventario y ventas de dulces",
