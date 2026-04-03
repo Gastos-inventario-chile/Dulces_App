@@ -64,8 +64,11 @@ export async function confirmSale(payload: SalePayload): Promise<string> {
     for (let i = 0; i < productRefs.length; i++) {
       const pid = Object.keys(stockMap)[i];
       const snap = productSnaps[i];
+      const data = snap.data();
+      if (!data) continue; // Ya verificado arriba, pero satisface a TS
+
       tx.update(productRefs[i], {
-        stock: (snap.data().stock as number) - stockMap[pid],
+        stock: (data.stock as number) - stockMap[pid],
       });
     }
 
