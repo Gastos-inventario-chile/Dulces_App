@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/store/authContext";
 
-// Firebase Auth requiere el browser — desactivar prérender estático
-export const dynamic = "force-dynamic";
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "DulcesApp - Sistema de Ventas",
@@ -20,8 +20,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body>
+    <html lang="es" className={inter.className}>
+      <body className="antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
