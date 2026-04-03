@@ -10,13 +10,18 @@ export function useClients() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
       const data = await getClients(user.uid);
       setClients(data);
     } catch (e: any) {
-      setError(e.message);
+      console.error("Error loading clients:", e);
+      setError(e.message || "Error al cargar clientes");
     } finally {
       setLoading(false);
     }
@@ -26,14 +31,27 @@ export function useClients() {
 
   const add = async (data: ClientInput) => {
     if (!user) return;
-    await createClient(user.uid, data);
-    await load();
+    try {
+      await createClient(user.uid, data);
+      await load();
+    } catch (e: any) {
+      console.error("Error adding client:", e);
+      setError(e.message);
+      throw e;
+    }
   };
 
   const remove = async (id: string) => {
-    await deleteClient(id);
-    await load();
+    try {
+      await deleteClient(id);
+      await load();
+    } catch (e: any) {
+      console.error("Error deleting client:", e);
+      setError(e.message);
+      throw e;
+    }
   };
 
   return { clients, loading, error, add, remove, reload: load };
 }
+

@@ -10,7 +10,10 @@ export function useDebts() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [data, total] = await Promise.all([
@@ -19,6 +22,8 @@ export function useDebts() {
       ]);
       setDebts(data);
       setTotalPending(total);
+    } catch (e: any) {
+      console.error("Error loading debts:", e);
     } finally {
       setLoading(false);
     }
@@ -27,8 +32,13 @@ export function useDebts() {
   useEffect(() => { load(); }, [load]);
 
   const payDebt = async (id: string) => {
-    await markDebtPaid(id);
-    await load();
+    try {
+      await markDebtPaid(id);
+      await load();
+    } catch (e: any) {
+      console.error("Error paying debt:", e);
+      throw e;
+    }
   };
 
   // Alertas: vencidas o que vencen mañana

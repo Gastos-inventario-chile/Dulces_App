@@ -10,13 +10,18 @@ export function usePromotions() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
       const data = await getPromotions(user.uid);
       setPromotions(data);
     } catch (e: any) {
-      setError(e.message);
+      console.error("Error loading promotions:", e);
+      setError(e.message || "Error al cargar promociones");
     } finally {
       setLoading(false);
     }
@@ -26,13 +31,25 @@ export function usePromotions() {
 
   const add = async (data: PromotionInput) => {
     if (!user) return;
-    await createPromotion(user.uid, data);
-    await load();
+    try {
+      await createPromotion(user.uid, data);
+      await load();
+    } catch (e: any) {
+      console.error("Error adding promotion:", e);
+      setError(e.message);
+      throw e;
+    }
   };
 
   const remove = async (id: string) => {
-    await deletePromotion(id);
-    await load();
+    try {
+      await deletePromotion(id);
+      await load();
+    } catch (e: any) {
+      console.error("Error deleting promotion:", e);
+      setError(e.message);
+      throw e;
+    }
   };
 
   return { promotions, loading, error, add, remove, reload: load };

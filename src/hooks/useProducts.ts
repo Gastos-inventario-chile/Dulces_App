@@ -10,13 +10,18 @@ export function useProducts() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
       const data = await getProducts(user.uid);
       setProducts(data);
     } catch (e: any) {
-      setError(e.message);
+      console.error("Error loading products:", e);
+      setError(e.message || "Error al cargar productos");
     } finally {
       setLoading(false);
     }
@@ -26,19 +31,38 @@ export function useProducts() {
 
   const add = async (data: ProductInput) => {
     if (!user) return;
-    await createProduct(user.uid, data);
-    await load();
+    try {
+      await createProduct(user.uid, data);
+      await load();
+    } catch (e: any) {
+      console.error("Error adding product:", e);
+      setError(e.message);
+      throw e;
+    }
   };
 
   const update = async (id: string, data: Partial<ProductInput>) => {
-    await updateProduct(id, data);
-    await load();
+    try {
+      await updateProduct(id, data);
+      await load();
+    } catch (e: any) {
+      console.error("Error updating product:", e);
+      setError(e.message);
+      throw e;
+    }
   };
 
   const remove = async (id: string) => {
-    await deleteProduct(id);
-    await load();
+    try {
+      await deleteProduct(id);
+      await load();
+    } catch (e: any) {
+      console.error("Error deleting product:", e);
+      setError(e.message);
+      throw e;
+    }
   };
 
   return { products, loading, error, add, update, remove, reload: load };
 }
+
