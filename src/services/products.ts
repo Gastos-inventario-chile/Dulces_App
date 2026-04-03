@@ -7,7 +7,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -18,11 +17,16 @@ const COL = "products";
 export async function getProducts(userId: string): Promise<Product[]> {
   const q = query(
     collection(db, COL),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
+    where("userId", "==", userId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+  const products = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+  // Sort in JS to avoid needing a Firestore composite index
+  return products.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() ?? 0;
+    const bTime = b.createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
 }
 
 export async function createProduct(userId: string, data: ProductInput): Promise<Product> {

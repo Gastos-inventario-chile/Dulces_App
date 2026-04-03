@@ -3,10 +3,8 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   doc,
   updateDoc,
-  Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Debt, DebtStatus } from "@/types";
@@ -23,28 +21,37 @@ function computeStatus(debt: Debt): DebtStatus {
 export async function getDebts(userId: string): Promise<Debt[]> {
   const q = query(
     collection(db, COL),
-    where("userId", "==", userId),
-    where("status", "!=", "pagado"),
-    orderBy("status"),
-    orderBy("dueDate", "asc")
+    where("userId", "==", userId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
+  const allDebts = snap.docs.map((d) => {
     const data = { id: d.id, ...d.data() } as Debt;
     return { ...data, status: computeStatus(data) };
   });
+  // Filter out paid debts and sort by dueDate
+  return allDebts
+    .filter((d) => d.status !== "pagado")
+    .sort((a, b) => {
+      const aTime = a.dueDate?.toMillis?.() ?? 0;
+      const bTime = b.dueDate?.toMillis?.() ?? 0;
+      return aTime - bTime;
+    });
 }
 
 export async function getAllDebts(userId: string): Promise<Debt[]> {
   const q = query(
     collection(db, COL),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
+    where("userId", "==", userId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
+  const debts = snap.docs.map((d) => {
     const data = { id: d.id, ...d.data() } as Debt;
     return { ...data, status: computeStatus(data) };
+  });
+  return debts.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() ?? 0;
+    const bTime = b.createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
   });
 }
 
@@ -56,3 +63,4 @@ export async function getTotalPending(userId: string): Promise<number> {
   const debts = await getDebts(userId);
   return debts.reduce((sum, d) => sum + d.amountPending, 0);
 }
+

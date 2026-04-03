@@ -3,12 +3,10 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   runTransaction,
   doc,
   serverTimestamp,
   Timestamp,
-  limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CartItem, PaymentStatus, Sale } from "@/types";
@@ -110,33 +108,30 @@ export async function confirmSale(payload: SalePayload): Promise<string> {
 export async function getSales(userId: string): Promise<Sale[]> {
   const q = query(
     collection(db, SALES_COL),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
+    where("userId", "==", userId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Sale));
+  const sales = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Sale));
+  return sales.sort((a, b) => {
+    const aTime = a.createdAt?.toMillis?.() ?? 0;
+    const bTime = b.createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
 }
 
 export async function getRecentSales(userId: string, n = 5): Promise<Sale[]> {
-  const q = query(
-    collection(db, SALES_COL),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc"),
-    limit(n)
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Sale));
+  const all = await getSales(userId);
+  return all.slice(0, n);
 }
 
 export async function getSalesToday(userId: string): Promise<Sale[]> {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
-  const q = query(
-    collection(db, SALES_COL),
-    where("userId", "==", userId),
-    where("createdAt", ">=", Timestamp.fromDate(start)),
-    orderBy("createdAt", "desc")
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Sale));
+  const startMs = start.getTime();
+  const all = await getSales(userId);
+  return all.filter((s) => {
+    const t = s.createdAt?.toMillis?.() ?? 0;
+    return t >= startMs;
+  });
 }
+
